@@ -3,13 +3,12 @@ import os
 from utils import authenticate_note
 
 app = Flask(__name__)
-
-# Limit upload size (optional)
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 @app.route('/')
 def index():
-    return "Realtime Currency Authentication API"
+    return "Realtime Currency Authentication API - Running"
 
 @app.route('/authenticate', methods=['POST'])
 def authenticate():
@@ -21,12 +20,12 @@ def authenticate():
     if file.filename == '':
         return jsonify({"result": "No selected file"}), 400
 
-    # Save the uploaded file
-    filepath = os.path.join("uploaded_image.jpg")
-    file.save(filepath)
+    # Save uploaded image
+    upload_path = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(upload_path)
 
-    # Authenticate
-    result = authenticate_note(filepath)
+    # Perform authentication
+    result = authenticate_note(upload_path)
 
     return jsonify({"result": result})
 

@@ -1,0 +1,19 @@
+# macOS system files
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+env/
+
+# VSCode
+.vscode/
+
+# Uploaded images (optional, to ignore temporary uploaded currency images)
+uploads/
+
+# Logs (optional)
+*.log

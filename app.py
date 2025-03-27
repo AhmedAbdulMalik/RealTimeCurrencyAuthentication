@@ -16,16 +16,18 @@ def authenticate():
         return jsonify({"result": "No image uploaded"}), 400
 
     file = request.files['image']
-
     if file.filename == '':
         return jsonify({"result": "No selected file"}), 400
 
-    # Save uploaded image
     upload_path = os.path.join(UPLOAD_FOLDER, file.filename)
     file.save(upload_path)
 
-    # Perform authentication
-    result = authenticate_note(upload_path)
+    is_valid, denomination = authenticate_note(upload_path)
+
+    if is_valid:
+        result = f"Authenticated - ₹{denomination}"
+    else:
+        result = "Fake Note"
 
     return jsonify({"result": result})
 

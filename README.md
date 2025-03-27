@@ -30,7 +30,29 @@ Counterfeit currency is a major challenge in financial security. This project pr
 ---
 
 ## 📂 Project Structure
-/frontend # UI - Developed by classmates ├── index.html ├── styles.css ├── script.js /backend # Backend - Handled by user ├── app.py ├── model.py ├── static/ ├── templates/
+Realtime-Currency-Authentication/
+│
+├── frontend/            # Frontend files (handled by classmates)
+│   ├── index.html       # Upload page
+│   ├── styles.css       # UI Styling
+│   └── script.js        # Logic to send the image to backend via API
+│
+├── backend/             # Backend files (you handle)
+│   ├── app.py           # Main Flask app to handle API requests
+│   ├── detector.py      # OpenCV logic (preprocessing, feature extraction, comparison)
+│   ├── templates/       # Flask templates (optional)
+│   ├── static/          # Flask static folder (if needed)
+│
+├── reference_images/    # Contains official images of correct note features
+│   ├── watermark.png
+│   ├── security_thread.png
+│   ├── emblem.png
+│   └── serial_number_area.png
+│
+├── requirements.txt     # Python dependencies
+├── LICENSE              # GNU GPL v3 License file
+└── README.md            # Documentation
+
 
 ---
 

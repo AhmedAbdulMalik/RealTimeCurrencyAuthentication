@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
             text-align: center;
             margin: 50px;
         }
+
         .container {
             width: 50%;
             margin: auto;
@@ -18,9 +20,11 @@
             border-radius: 10px;
             box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
         }
+
         input[type="file"] {
             margin-top: 10px;
         }
+
         button {
             margin-top: 20px;
             padding: 10px;
@@ -30,20 +34,23 @@
             cursor: pointer;
             border-radius: 5px;
         }
+
         button:hover {
             background-color: #0056b3;
         }
+
         #output {
             margin-top: 20px;
             font-weight: bold;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h2>Realtime Currency Authentication</h2>
-        <p>Upload an image of an Indian currency note to verify its authenticity.</p>
-        <input type="file" id="currencyImage" accept="image/*">
+        <p>Upload a <strong>JPEG</strong> image of an Indian currency note to verify its authenticity.</p>
+        <input type="file" id="currencyImage" accept="image/jpeg, image/jpg">
         <button onclick="uploadImage()">Authenticate</button>
         <p id="output"></p>
     </div>
@@ -55,18 +62,25 @@
                 alert("Please select an image first.");
                 return;
             }
+
+            const file = fileInput.files[0];
+            if (!file.name.toLowerCase().endsWith('.jpeg') && !file.name.toLowerCase().endsWith('.jpg')) {
+                alert("Only JPEG images are allowed.");
+                return;
+            }
+
             document.getElementById("output").innerText = "Authenticating...";
 
             const formData = new FormData();
-            formData.append("image", fileInput.files[0]);
+            formData.append("image", file);
 
-            fetch("http://localhost:5000/authenticate", { // Adjust backend URL
+            fetch("http://localhost:5000/authenticate", { // Change if your backend uses a different URL
                 method: "POST",
                 body: formData
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById("output").innerText = Result: ${data.result};
+                document.getElementById("output").innerText = `Result: ${data.result}`;
             })
             .catch(error => {
                 document.getElementById("output").innerText = "Error processing image.";
@@ -75,4 +89,5 @@
         }
     </script>
 </body>
+
 </html>

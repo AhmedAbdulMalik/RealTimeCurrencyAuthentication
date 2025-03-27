@@ -54,7 +54,7 @@ The backend will start at http://localhost:5000.
 Simply open index.html in your browser to test the authentication system.
 
 🎯 Contributions
-Frontend & UI – Developed by [Classmates]
+Frontend & UI – Developed by Loqmaan-09 and Ninjazz099
 
 Backend & Processing – Developed by AhmedAbdulMalik
 

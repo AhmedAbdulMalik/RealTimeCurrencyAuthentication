@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Result</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            background: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+            background: white;
+        }
+        h2 {
+            color: #0056b3;
+        }
+        .result-box {
+            margin-top: 25px;
+            font-weight: bold;
+            font-size: 1.2em;
+            padding: 20px;
+            border-radius: 5px;
+            border: 1px solid; /* Border color set by class */
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+         a {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        a:hover {
+            background-color: #0056b3;
+        }
+         .disclaimer {
+            margin-top: 30px;
+            font-size: 0.8em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Authentication Result</h2>
+
+        <!-- Display the result message -->
+        <!-- Use the 'is_error' variable passed from Flask to set the class -->
+        <div class="result-box {{ 'error' if is_error else 'success' }}">
+            {{ result }}
+        </div>
+
+         <p class="disclaimer">
+            <strong>Disclaimer:</strong> This tool provides a basic check based on visual feature matching. It is <strong>not</strong> foolproof and image quality/conditions heavily influence results.
+        </p>
+
+        <!-- Link back to the upload page -->
+        <a href="{{ url_for('index') }}">Check Another Note</a>
+    </div>
+</body>
+</html>

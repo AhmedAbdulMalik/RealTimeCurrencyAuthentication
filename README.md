@@ -22,7 +22,7 @@ Counterfeit currency is a major challenge in financial security. This project pr
 ## 🛠️ Technologies Used
 | Component  | Technology |
 |------------|------------|
-| **Frontend**  | HTML, CSS, JavaScript |
+| **Frontend**  | HTML, CSS, JavaScript, Three.js |
 | **Backend**   | Python (Flask) |
 | **Libraries** | OpenCV, Tesseract OCR, TensorFlow (optional) |
 | **Database**  | SQLite/PostgreSQL (if needed) |
@@ -76,9 +76,13 @@ The backend will start at http://localhost:5000.
 Simply open index.html in your browser to test the authentication system.
 
 🎯 Contributions
-Frontend & UI – Developed by Loqmaan-09 and Ninjazz099
+Frontend & UI – AhmedAbdulMalik
 
-Backend & Processing – Developed by AhmedAbdulMalik
+Backend & Processing – AhmedAbdulMalik
+
+Testing - Loqmaan-09 and Ninjazz099
+
+Documentation - AhmedAbdulMalik
 
 🔧 Want to contribute? Feel free to fork, improve, and submit a pull request!
 

@@ -10,27 +10,29 @@ REFERENCE_NOTES_FOLDER = 'reference_notes'
 GOOD_MATCH_DISTANCE_THRESHOLD = 50
 MIN_GOOD_MATCHES_REQUIRED = 20
 
-def authenticate_note(uploaded_img_path):
+def authenticate_note(uploaded_img_path, reference_folder=REFERENCE_NOTES_FOLDER):
     """
     Authenticates a note by comparing ORB features against reference images.
     Uses simple thresholding.
 
     Args:
         uploaded_img_path (str): Path to the uploaded image.
+        reference_folder (str): Path to folder containing reference images.
 
     Returns:
         tuple: (bool: True if potentially valid, False otherwise,
-                str/None: Denomination name if valid, None otherwise)
+                str/None: Denomination name if valid, None otherwise,
+                int: Number of good matches found)
     """
     print(f"--- authenticate_note called for: {uploaded_img_path} ---")
 
     # --- Input Validation ---
     if not os.path.exists(uploaded_img_path):
         print(f"Error: Uploaded image path does not exist: {uploaded_img_path}")
-        return False, "File Path Error"
-    if not os.path.isdir(REFERENCE_NOTES_FOLDER):
-         print(f"Error: Reference notes folder not found: {REFERENCE_NOTES_FOLDER}")
-         return False, "Reference Folder Missing"
+        return False, "File Path Error", 0
+    if not os.path.isdir(reference_folder):
+         print(f"Error: Reference notes folder not found: {reference_folder}")
+         return False, "Reference Folder Missing", 0
 
 
     # --- Load Uploaded Image ---
@@ -39,7 +41,7 @@ def authenticate_note(uploaded_img_path):
     if uploaded_img is None:
         print(f"Error: Failed to load uploaded image at {uploaded_img_path} using OpenCV.")
         # Could be corrupted, unsupported format not caught earlier, or permissions issue
-        return False, "Image Load Error"
+        return False, "Image Load Error", 0
     print(f"Uploaded image loaded successfully (shape: {uploaded_img.shape}).")
 
     # --- Initialize ORB ---
@@ -49,7 +51,7 @@ def authenticate_note(uploaded_img_path):
         print("ORB detector created.")
     except Exception as e:
          print(f"Error creating ORB detector: {e}")
-         return False, "OpenCV Init Error"
+         return False, "OpenCV Init Error", 0
 
     # --- Find Features in Uploaded Image ---
     try:
@@ -57,11 +59,11 @@ def authenticate_note(uploaded_img_path):
         if des_uploaded is None or len(kp_uploaded) == 0:
             print("Warning: No ORB features detected in the uploaded image.")
             # This image might be blank, too blurry, or lack texture
-            return False, "No Features in Upload"
+            return False, "No Features in Upload", 0
         print(f"Found {len(kp_uploaded)} features in uploaded image.")
     except cv2.error as e:
         print(f"OpenCV error detecting features in uploaded image: {e}")
-        return False, "Feature Detection Error"
+        return False, "Feature Detection Error", 0
 
 
     # --- Initialize Matcher ---
@@ -71,19 +73,19 @@ def authenticate_note(uploaded_img_path):
         print("Brute-Force Matcher created (crossCheck=True).")
     except Exception as e:
         print(f"Error creating BFMatcher: {e}")
-        return False, "OpenCV Matcher Error"
+        return False, "OpenCV Matcher Error", 0
 
     # --- Compare against Reference Notes ---
     best_match_info = {
         "note_name": None,
         "good_matches_count": 0
     }
-    print(f"Starting comparison against reference notes in '{REFERENCE_NOTES_FOLDER}'...")
+    print(f"Starting comparison against reference notes in '{reference_folder}'...")
 
-    for ref_filename in os.listdir(REFERENCE_NOTES_FOLDER):
+    for ref_filename in os.listdir(reference_folder):
         # Ensure it's an image file
         if ref_filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-            ref_path = os.path.join(REFERENCE_NOTES_FOLDER, ref_filename)
+            ref_path = os.path.join(reference_folder, ref_filename)
             print(f"-- Comparing with: {ref_filename}")
 
             # Load Reference Image (Grayscale)
@@ -127,8 +129,8 @@ def authenticate_note(uploaded_img_path):
 
     if best_match_info["good_matches_count"] >= MIN_GOOD_MATCHES_REQUIRED:
         print(f"Match count ({best_match_info['good_matches_count']}) meets threshold ({MIN_GOOD_MATCHES_REQUIRED}). Result: Likely Genuine.")
-        return True, best_match_info["note_name"] # Return True and the identified denomination
+        return True, best_match_info["note_name"], best_match_info["good_matches_count"] # Return True and the identified denomination
     else:
         print(f"Match count ({best_match_info['good_matches_count']}) is below threshold ({MIN_GOOD_MATCHES_REQUIRED}). Result: Potential Fake/Unverifiable.")
-        return False, None # Return False, no confirmed denomination'
+        return False, None, 0 # Return False, no confirmed denomination'
       

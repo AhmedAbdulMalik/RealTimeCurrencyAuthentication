@@ -64,7 +64,7 @@
         <p>Upload an image (JPEG or PNG) of an Indian currency note to check against reference images.</p>
 
         <!-- Standard HTML form pointing to the /authenticate route -->
-        <form action="{{ url_for('authenticate') }}" method="post" enctype="multipart/form-data">
+        <form action="/authenticate" method="post" enctype="multipart/form-data">
             <input type="file" name="image" id="currencyImage" accept="image/jpeg, image/png" required>
             <button type="submit" id="uploadBtn">Check Note</button>
         </form>

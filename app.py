@@ -1,5 +1,3 @@
-
-
 # app.py (with diagnostic print statements)
 
 print("--- Script starting: app.py ---")
@@ -13,9 +11,10 @@ print("Imports os, traceback done.")
 # Flask and Utils Imports (in a try block to catch errors early)
 print("Attempting to import Flask and utils...")
 try:
-    from flask import Flask, request, jsonify, render_template
+    from flask import Flask, request, jsonify, render_template, redirect, url_for
     print("-> Successfully imported Flask modules.")
     from utils import authenticate_note # Renamed function for clarity
+    import cv2  # Import OpenCV for cv2.error exception handling
     print("-> Successfully imported authenticate_note from utils.")
 except ImportError as e:
     print(f"!!! IMPORT ERROR: {e}")
@@ -91,13 +90,24 @@ def index():
          else:
             return f"Server error rendering template: {e}", 500
 
-@app.route('/authenticate', methods=['POST'])
+@app.route('/authenticate', methods=['GET', 'POST'])
 def authenticate():
-    print("--- Request received for route: /authenticate (POST) ---")
+    print("--- Request received for route: /authenticate ---")
+    print(f"Request method: {request.method}")
+    print(f"Request headers: {request.headers}")
+    
+    # Handle GET requests by redirecting to the index page
+    if request.method == 'GET':
+        print("GET request to /authenticate, redirecting to index")
+        return redirect('/')
+        
+    # Continue with POST request handling
+    print("POST request to /authenticate, processing file upload")
     # Check if the post request has the file part
     if 'image' not in request.files:
         print("!!! Error: No 'image' file part found in the request.")
-        return jsonify({"status": "error", "error": "No image file part in the request"}), 400
+        return render_template('results.html', is_error=True, 
+                              result="No image file part in the request")
 
     file = request.files['image']
     print(f"-> Received file: '{file.filename}' (Content-Type: {file.content_type})")
@@ -105,14 +115,16 @@ def authenticate():
     # If the user does not select a file, the browser submits an empty file without a filename.
     if file.filename == '':
         print("!!! Error: No file selected (filename is empty).")
-        return jsonify({"status": "error", "error": "No image file selected"}), 400
+        return render_template('results.html', is_error=True, 
+                              result="No image file selected")
 
     # Basic check for allowed extensions
     allowed_extensions = {'png', 'jpg', 'jpeg'}
     file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
     if file_ext not in allowed_extensions:
          print(f"!!! Error: Invalid file type '{file_ext}'. Allowed: {allowed_extensions}")
-         return jsonify({"status": "error", "error": f"Invalid file type '{file_ext}'. Use PNG, JPG, or JPEG"}), 400
+         return render_template('results.html', is_error=True, 
+                               result=f"Invalid file type '{file_ext}'. Use PNG, JPG, or JPEG")
 
     upload_path = None # Initialize upload_path to handle potential errors before assignment
     try:
@@ -132,40 +144,33 @@ def authenticate():
         is_likely_genuine, denomination, match_count = authenticate_note(upload_path, REFERENCE_FOLDER)
         print(f"-> authenticate_note returned: Genuine={is_likely_genuine}, Denom={denomination}, Matches={match_count}")
 
-        # Prepare JSON response
+        # Render results template with appropriate variables
         if is_likely_genuine:
-            result = {
-                "status": "success",
-                "result": "Likely Genuine",
-                "denomination": f"₹{denomination}",
-                "matches": match_count
-            }
-            print(f"-> Responding with: {result}")
-            return jsonify(result)
+            result_message = f"Likely Genuine Currency: ₹{denomination} (Matches: {match_count})"
+            return render_template('results.html', is_error=False, result=result_message)
         else:
-            result = {
-                "status": "failed",
-                "result": "Potential Fake or Cannot Verify",
-                "denomination": None if denomination is None else f"Closest Match Attempt: ₹{denomination}", # Be more specific
-                "matches": match_count # Still useful to know the score
-            }
-            print(f"-> Responding with: {result}")
-            return jsonify(result)
+            result_message = "Potential Fake or Cannot Verify"
+            if denomination:
+                result_message += f" (Closest Match Attempt: ₹{denomination}, Matches: {match_count})"
+            return render_template('results.html', is_error=True, result=result_message)
 
     except FileNotFoundError as e:
          # This might happen if REFERENCE_FOLDER is suddenly deleted, or within utils.py
          print(f"!!! FILE NOT FOUND ERROR during processing: {e}")
          traceback.print_exc()
-         return jsonify({"status": "error", "error": f"Server file error: {e}"}), 500
+         return render_template('results.html', is_error=True, 
+                               result=f"Server file error: {e}")
     except cv2.error as e: # Catch OpenCV specific errors if they bubble up
         print(f"!!! OpenCV ERROR during processing: {e}")
         traceback.print_exc()
-        return jsonify({"status": "error", "error": f"Image processing error (OpenCV): {e}"}), 500
+        return render_template('results.html', is_error=True, 
+                              result=f"Image processing error: {e}")
     except Exception as e:
         # Catch any other unexpected errors during processing
         print(f"!!! UNEXPECTED ERROR during /authenticate processing: {e}")
         traceback.print_exc() # Print detailed traceback to server console
-        return jsonify({"status": "error", "error": "An internal server error occurred during processing."}), 500
+        return render_template('results.html', is_error=True, 
+                              result="An internal server error occurred during processing.")
     finally:
         # Clean up the uploaded file *after* processing is complete or if an error occurred
         if upload_path and os.path.exists(upload_path):
@@ -175,6 +180,12 @@ def authenticate():
                 print("-> Cleanup successful.")
             except Exception as e:
                 print(f"!!! Error cleaning up file {upload_path}: {e}")
+
+# Add a simple test route to verify the server is working
+@app.route('/test', methods=['GET', 'POST'])
+def test():
+    print(f"Test endpoint called with method: {request.method}")
+    return f"Test endpoint working. Method: {request.method}"
 
 print("Route definitions completed.")
 
@@ -197,16 +208,16 @@ if __name__ == "__main__":
        print(f"-> Reference notes folder '{REFERENCE_FOLDER}' confirmed.")
        print("-> Attempting to start Flask development server...")
        print("   - Host: 0.0.0.0 (accessible on network)")
-       print("   - Port: 5001")
+       print("   - Port: 5003")
        print("   - Debug Mode: ON")
        try:
            # Start the Flask development server
-           app.run(debug=True, host="0.0.0.0", port=5001)
+           app.run(debug=True, host="0.0.0.0", port=5003)
            # Code here will run ONLY after the server is stopped (e.g., with Ctrl+C)
            print("--- Flask server has been shut down. ---")
        except OSError as e:
             if "Address already in use" in str(e):
-                print(f"!!! ERROR: Port 5001 is already in use.")
+                print(f"!!! ERROR: Port 5003 is already in use.")
                 print(f"!!! Another application might be running on this port,")
                 print(f"!!! or a previous instance of this script didn't shut down correctly.")
                 print(f"!!! Try stopping the other application or use a different port.")

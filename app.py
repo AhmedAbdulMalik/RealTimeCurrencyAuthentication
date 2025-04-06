@@ -1,4 +1,4 @@
-'''
+
 
 # app.py (with diagnostic print statements)
 
@@ -225,4 +225,3 @@ else:
 print("--- Script execution finished (app.py) ---")
 
 
-'''

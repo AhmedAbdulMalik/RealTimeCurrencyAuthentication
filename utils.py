@@ -1,5 +1,5 @@
 # utils.py (Simple version corresponding to the initial request)
-'''
+
 import cv2
 import numpy as np
 import os
@@ -131,4 +131,4 @@ def authenticate_note(uploaded_img_path):
     else:
         print(f"Match count ({best_match_info['good_matches_count']}) is below threshold ({MIN_GOOD_MATCHES_REQUIRED}). Result: Potential Fake/Unverifiable.")
         return False, None # Return False, no confirmed denomination'
-        '''
+      

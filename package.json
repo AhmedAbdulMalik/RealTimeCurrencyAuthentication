@@ -1,0 +1,23 @@
+{
+  "name": "front",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "",
+  "type": "commonjs",
+  "main": "main.js",
+  "scripts": {
+    "start": "npx vite",
+    "build": "npx vite build",
+    "preview": "npx vite preview",
+    "dev": "npx vite dev",
+    "serve": "npx vite serve",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "vite": "^6.2.5"
+  },
+  "dependencies": {
+    "three": "^0.175.0"
+  }
+}

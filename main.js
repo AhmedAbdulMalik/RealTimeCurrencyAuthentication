@@ -47,9 +47,9 @@ composer.addPass(ssaoPass);
 // Add bloom effect for light glow - increase strength for better lamp glow
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
-  0.3,  // increased strength for better lamp glow
+  0.7,  // increased strength for better lamp glow
   0.4,
-  0.7   // lower threshold to allow more elements to glow
+  0.3   // lower threshold to allow more elements to glow
 );
 composer.addPass(bloomPass);
 
@@ -678,6 +678,12 @@ function loadModel() {
       
       // Hide loading screen
       hideLoading();
+      
+      // Apply wall textures after model is loaded and traversed
+      applyWallTextures();
+      
+      // Add interior accent lighting after textures are applied
+      addInteriorAccentLighting();
     },
     (progress) => {
       // Log and update loading progress
@@ -2240,4 +2246,299 @@ function createUploadButtonTexture() {
   const texture = new THREE.CanvasTexture(canvas);
   texture.needsUpdate = true;
   return texture;
-} 
+}
+
+// Add a function to apply textures to walls based on their position/type
+function applyWallTextures() {
+  console.log("Applying warehouse textures to ALL walls in the scene...");
+  
+  // Track how many objects were textured
+  let texturedCount = 0;
+  let wallCandidates = 0;
+  
+  // Pre-load the warehouse textures
+  const textureLoader = new THREE.TextureLoader();
+  const texturePath = './abandoned_warehouse_-_interior_scene/textures/';
+  
+  // Load wall textures from the warehouse textures folder
+  const wallTextures = {
+    brick: textureLoader.load(texturePath + 'briques-ss-fenetre_diffuse.png'),
+    brickWindow: textureLoader.load(texturePath + 'briques-sur-fenetre_diffuse.png'),
+    concrete: textureLoader.load(texturePath + 'colonne-beton_diffuse.png'),
+    concrete2: textureLoader.load(texturePath + 'colonne-beton.001_diffuse.png'),
+    leftWall: textureLoader.load(texturePath + 'mur-gauche_diffuse.png'),
+    rightWall: textureLoader.load(texturePath + 'mur-droite_diffuse.png'),
+    backWall: textureLoader.load(texturePath + 'mur-arriere_diffuse.png'),
+    farWall: textureLoader.load(texturePath + 'mur-fond_diffuse.png'),
+    material: textureLoader.load(texturePath + 'material_diffuse.png'),
+    door: textureLoader.load(texturePath + 'TexturesCom_DoorsWoodBarn0017_M_diffuse.png'),
+    gravel: textureLoader.load(texturePath + 'gravas_diffuse.jpeg')
+  };
+  
+  // Configure texture properties
+  Object.values(wallTextures).forEach(texture => {
+    texture.encoding = THREE.sRGBEncoding;
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.needsUpdate = true;
+  });
+  
+  console.log("Loaded warehouse textures:", Object.keys(wallTextures).join(", "));
+  
+  // Find all wall meshes in the scene with expanded detection
+  model.traverse((child) => {
+    if (child.isMesh) {
+      const name = child.name.toLowerCase();
+      const materialName = child.material && child.material.name ? child.material.name.toLowerCase() : '';
+      
+      // Expanded wall detection logic
+      const isWall = name.includes('wall') || 
+                     materialName.includes('wall') ||
+                     name.includes('partition') ||
+                     materialName.includes('partition') ||
+                     name.includes('barrier') ||
+                     name.includes('fence') ||
+                     (name.includes('plane') && child.scale.y > 2) || // Vertical planes are likely walls
+                     (child.geometry && child.geometry.type === 'PlaneGeometry' && child.scale.y > 2) ||
+                     // Fallback geometric detection for large vertical surfaces
+                     (child.geometry && 
+                      child.scale.y > 2 && // Tall objects
+                      (Math.abs(child.rotation.x) < 0.2 || Math.abs(child.rotation.x - Math.PI) < 0.2) && // Vertical orientation
+                      child.scale.x > 1.5 && // Wide enough to be a wall
+                      !name.includes('floor') && !name.includes('ceiling') && !name.includes('roof'));
+      
+      wallCandidates++;
+      
+      if (isWall) {
+        console.log(`Found wall: ${child.name} (position: ${child.position.x.toFixed(2)}, ${child.position.y.toFixed(2)}, ${child.position.z.toFixed(2)})`);
+        
+        // Make a copy of the material to avoid affecting other objects sharing the same material
+        if (Array.isArray(child.material)) {
+          // Handle multi-material objects
+          child.material = child.material.map(mat => mat.clone());
+        } else {
+          // Handle single material objects
+          child.material = child.material.clone();
+        }
+        
+        // Determine wall type based on position and name
+        let selectedTexture;
+        
+        // Select texture based on position and wall characteristics
+        if (name.includes('brick') || materialName.includes('brick') || name.includes('exterior')) {
+          selectedTexture = wallTextures.brick;
+          console.log(`Applied brick texture to ${child.name}`);
+        }
+        else if ((name.includes('brick') && name.includes('window')) || 
+                (Math.abs(child.position.y - 4) < 2 && Math.abs(child.position.x) > 6)) {
+          selectedTexture = wallTextures.brickWindow;
+          console.log(`Applied brick window texture to ${child.name}`);
+        }
+        else if (child.position.x > 6 && child.position.y < 5) {
+          selectedTexture = wallTextures.rightWall;
+          console.log(`Applied right wall texture to ${child.name}`);
+        }
+        else if (child.position.x < -6 && child.position.y < 5) {
+          selectedTexture = wallTextures.leftWall;
+          console.log(`Applied left wall texture to ${child.name}`);
+        }
+        else if (child.position.z > 6 && child.position.y < 5) {
+          selectedTexture = wallTextures.backWall;
+          console.log(`Applied back wall texture to ${child.name}`);
+        }
+        else if (child.position.z < -6 && child.position.y < 5) {
+          selectedTexture = wallTextures.farWall;
+          console.log(`Applied far wall texture to ${child.name}`);
+        }
+        else if (name.includes('concrete') || name.includes('pillar') || name.includes('column')) {
+          selectedTexture = wallTextures.concrete;
+          console.log(`Applied concrete texture to ${child.name}`);
+        }
+        else if (name.includes('door') || materialName.includes('door')) {
+          selectedTexture = wallTextures.door;
+          console.log(`Applied door texture to ${child.name}`);
+        }
+        else {
+          // Default to material texture for unidentified walls
+          selectedTexture = wallTextures.material;
+          console.log(`Applied default material texture to ${child.name}`);
+        }
+        
+        // Apply the selected texture to the material(s)
+        const applyToMaterial = (material) => {
+          // Set material properties
+          material.map = selectedTexture;
+          material.roughness = 0.9;
+          material.metalness = 0.1;
+          
+          // Calculate appropriate texture scaling based on object size
+          const scale = Math.max(
+            1,
+            Math.min(
+              5,
+              Math.max(
+                child.scale.x,
+                child.scale.y
+              ) / 3
+            )
+          );
+          
+          // Configure texture properties
+          if (material.map) {
+            material.map.repeat.set(scale, scale);
+            material.map.needsUpdate = true;
+          }
+        };
+        
+        // Apply textures to all materials
+        if (Array.isArray(child.material)) {
+          child.material.forEach(applyToMaterial);
+        } else {
+          applyToMaterial(child.material);
+        }
+        
+        // Enable shadows for the wall
+        child.castShadow = true;
+        child.receiveShadow = true;
+        
+        texturedCount++;
+      }
+    }
+  });
+  
+  console.log(`Wall textures application complete. Applied textures to ${texturedCount} out of ${wallCandidates} potential wall candidates.`);
+}
+
+// Add interior accent lighting function
+function addInteriorAccentLighting() {
+  console.log("Adding interior accent lighting...");
+  
+  // Add small point lights in strategic locations
+  const accentPositions = [
+    { x: 2, y: 1.8, z: 1, color: 0xffaa33, intensity: 1.2 },    // Warm light near entrance
+    { x: -3, y: 1.6, z: -2, color: 0xaaeeff, intensity: 1.0 }, // Cool blue light in corner
+    { x: 0, y: 1.7, z: -5, color: 0xffccaa, intensity: 1.1 },   // Soft light in back area
+    { x: 5, y: 1.2, z: 3, color: 0xffffdd, intensity: 0.9 },  // Yellowish light on right side
+    { x: -4, y: 1.5, z: 4, color: 0xddffee, intensity: 0.8 }    // Greenish tint on left side
+  ];
+  
+  // Create all accent lights
+  accentPositions.forEach(pos => {
+    // Create small point light
+    const pointLight = new THREE.PointLight(pos.color, pos.intensity, 15); // Increased range from 10 to 15
+    pointLight.position.set(pos.x, pos.y, pos.z);
+    
+    // Add small size shadow (only for key lights)
+    if (pos.intensity > 0.9) { // Changed from 0.6 to 0.9 to match new intensities
+      pointLight.castShadow = true;
+      pointLight.shadow.mapSize.width = 512;
+      pointLight.shadow.mapSize.height = 512;
+      pointLight.shadow.camera.near = 0.5;
+      pointLight.shadow.camera.far = 15;
+    }
+    
+    // Create light helper sphere (visually represents light source)
+    const sphereSize = 0.15; // Increased from 0.1 to 0.15 for better visibility
+    const lightBulbGeometry = new THREE.SphereGeometry(sphereSize, 8, 8);
+    const lightBulbMaterial = new THREE.MeshBasicMaterial({ 
+      color: pos.color,
+      transparent: true,
+      opacity: 0.8, // Increased from 0.7 to 0.8
+      emissive: pos.color,
+      emissiveIntensity: 0.8
+    });
+    const lightBulb = new THREE.Mesh(lightBulbGeometry, lightBulbMaterial);
+    lightBulb.position.copy(pointLight.position);
+    
+    // Add light and bulb to scene
+    scene.add(pointLight);
+    scene.add(lightBulb);
+    
+    console.log(`Added accent light at (${pos.x}, ${pos.y}, ${pos.z})`);
+  });
+  
+  // Add a few spotlights for focused lighting in specific areas
+  const spotlightPositions = [
+    { x: 0, y: 3.5, z: 0, color: 0xffffff, intensity: 1.2, target: { x: 0, y: 0, z: 0 } },  // Center spotlight
+    { x: 4, y: 3.2, z: -3, color: 0xf8e8c8, intensity: 1.0, target: { x: 4, y: 0, z: -3 } } // Corner spotlight
+  ];
+  
+  // Create all spotlights
+  spotlightPositions.forEach(pos => {
+    // Create spotlight
+    const spotlight = new THREE.SpotLight(pos.color, pos.intensity, 25, Math.PI / 5, 0.6, 1.5); // Increased intensity and range
+    spotlight.position.set(pos.x, pos.y, pos.z);
+    
+    // Create and set target
+    const targetObject = new THREE.Object3D();
+    targetObject.position.set(pos.target.x, pos.target.y, pos.target.z);
+    scene.add(targetObject);
+    spotlight.target = targetObject;
+    
+    // Configure shadow
+    spotlight.castShadow = true;
+    spotlight.shadow.mapSize.width = 1024;
+    spotlight.shadow.mapSize.height = 1024;
+    spotlight.shadow.camera.near = 0.5;
+    spotlight.shadow.camera.far = 20;
+    
+    // Create light cone visual effect
+    const spotlightHelper = new THREE.SpotLightHelper(spotlight);
+    
+    // Add volumetric light effect (simple version)
+    const spotGeometry = new THREE.CylinderGeometry(0.2, 2.0, pos.y, 16, 1, true); // Adjust height to match position
+    // Rotate cylinder to point downward
+    spotGeometry.rotateX(Math.PI / 2);
+    
+    const spotMaterial = new THREE.MeshBasicMaterial({
+      color: pos.color,
+      transparent: true,
+      opacity: 0.15, // Increased from 0.1 to 0.15
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending
+    });
+    
+    const lightCone = new THREE.Mesh(spotGeometry, spotMaterial);
+    lightCone.position.copy(spotlight.position);
+    lightCone.lookAt(targetObject.position);
+    
+    // Add to scene
+    scene.add(spotlight);
+    scene.add(lightCone);
+    
+    console.log(`Added spotlight at (${pos.x}, ${pos.y}, ${pos.z})`);
+  });
+  
+  // Add subtle ambient light to areas
+  const areaLights = [
+    { position: { x: -2, y: 0.7, z: -2 }, size: { width: 3, height: 1 }, color: 0x5566ff, intensity: 0.4 }, // Doubled from 0.2
+    { position: { x: 3, y: 0.6, z: 3 }, size: { width: 2, height: 0.5 }, color: 0xff8866, intensity: 0.3 } // Doubled from 0.15
+  ];
+  
+  areaLights.forEach(area => {
+    // Create rect area light
+    const rectLight = new THREE.RectAreaLight(
+      area.color,
+      area.intensity,
+      area.size.width,
+      area.size.height
+    );
+    
+    rectLight.position.set(
+      area.position.x,
+      area.position.y,
+      area.position.z
+    );
+    
+    // Keep rect light horizontal but rotate around y-axis
+    rectLight.rotation.x = -Math.PI / 2;
+    
+    // Add to scene
+    scene.add(rectLight);
+    
+    console.log(`Added area light at (${area.position.x}, ${area.position.y}, ${area.position.z})`);
+  });
+  
+  console.log("Interior accent lighting added");
+}
+  

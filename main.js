@@ -27,4 +27,14 @@ const torus = new THREE.Mesh(geometry,material);
 //finally making it visible
 scene.add(torus);
 //renderer==DRAW
-renderer.render(scene,camera);
+////renderer.render(scene,camera);
+
+function animate(){
+requestAnimationFrame(animate);
+
+torus.rotation.x += 0.01;
+
+
+renderer.render(scene,camera);//GAMELOOP
+}
+animate()
